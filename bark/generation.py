@@ -13,6 +13,8 @@ import torch.nn.functional as F
 import tqdm
 from transformers import BertTokenizer
 from huggingface_hub import hf_hub_download
+from numpy.core.multiarray import scalar
+from numpy import dtype
 
 from .model import GPTConfig, GPT
 from .model_fine import FineGPT, FineGPTConfig
@@ -209,7 +211,7 @@ def _load_model(ckpt_path, device, use_small=False, model_type="text"):
     if not os.path.exists(ckpt_path):
         logger.info(f"{model_type} model not found, downloading into `{CACHE_DIR}`.")
         _download(model_info["repo_id"], model_info["file_name"])
-    checkpoint = torch.load(ckpt_path, map_location=device)
+    checkpoint = torch.load(ckpt_path, map_location=device, weights_only=False)
     # this is a hack
     model_args = checkpoint["model_args"]
     if "input_vocab_size" not in model_args:
@@ -818,3 +820,6 @@ def codec_decode(fine_tokens):
     if OFFLOAD_CPU:
         model.to("cpu")
     return audio_arr
+
+# Add numpy scalar and dtype to safe globals before loading models
+torch.serialization.add_safe_globals([scalar, dtype])
